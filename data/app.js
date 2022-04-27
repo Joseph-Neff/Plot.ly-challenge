@@ -1,116 +1,105 @@
-// CORS error when trying to import, so use url on github - it worked!
-const url =
-  "https://raw.githubusercontent.com/norojordan/plotly-challenge/main/samples.json";
-d3.json(url).then((data) => {
-  console.log(data);
-});
+// Use the D3 library to read in samples.json.
+// Create a horizontal bar chart with a dropdown menu to display the top 10 OTUs found in that individual.
+// Use sample_values as the values for the bar chart.
+// Use otu_ids as the labels for the bar chart.
+// Use otu_labels as the hovertext for the chart.
 
-function buildDemoDisplay(sample) {
-  d3.json(url).then((data) => {
-   
-    let metadata = data.metadata;
 
-    let filteredMetaData = metadata.filter((sampleOBJ) => sampleOBJ.id == sample);
+// get the numbers from json into the dropdown
+function buildmetadatadropdown(samples) {
+    d3.json("samples.json").then((data) => {
+            let metadata = data.metadata;
+            let filtermetadata = metadata.filter(sampleobject => sampleobject.id == samples);
+            var samplemetadata = d3.select("sample-metadata");
+        } ) 
 
-    if (filteredMetaData.length > 0) {
-      let resultSample = filteredMetaData[0];
-      let metaDataPanel = d3.select("#sample-metadata");
+}
 
-      // Clears out the screen
-      metaDataPanel.html("");
-
-      Object.entries(resultSample).forEach(([key, value]) => {
-        metaDataPanel.append("h6").text(`${key}: ${value}`);
-      });
-    } else {
-      console.log("data error");
+function buildmetadatadisplay(samples) {
+    d3.json("samples.json").then((data)=>{
+        let metadata=data.metadata;
     }
-  });
 }
+//then do object entries for key and value pair; each key value pair needs to be included in order for changes in display to occur
+// Need to change what is in the append() Don't think "option" is right
+            Object.entries(filtermetadata).forEach(([key, value]) => {
+                samplemetadata.append("h5").text(key[0].toUpperCase() + ": " + key[1] + "\n");
 
-
-//Create plots
-function createPlots(id) {
-  // Fetch the JSON data and console log it. Make sure to start sever first!
-  d3.json(url).then((data) => {
-    console.log(data);
-
-    // Filter sample values in samples array by selected id
-    let filteredSample = data.samples.filter((sample) => sample.id === id)[0];
-    // console.log("Filtered Sample:",filteredSample);
-
-    // Slice the first 10 objects for plotting & reverse for Plotly
-    let values = filteredSample.sample_values.slice(0, 10).reverse();
-    let otuids = filteredSample.otu_ids
-      .map((otuid) => `OTU ${otuid}`)
-      .slice(0, 10)
-      .reverse();
-    let otulabels = filteredSample.otu_labels.slice(0, 10).reverse();
-
-    //Trace 1 for the top 10 otus in an individual
-    let trace1 = {
-      x: values,
-      y: otuids,
-      text: otulabels,
-      type: "bar",
-      orientation: "h",
-      hovertext: "otulabels",
-    };
-
-    // Data trace array
-    let barData1 = [trace1];
-
-    // Apply a title to the layout
-    let layout1 = {
-      title: "Top 10 OTU's for Individuals",
-    };
-
-    // Render the plot to the div tag with id "bar"
-    Plotly.newPlot("bar", barData1, layout1);
-
-    let trace2 = {
-      x: filteredSample.otu_ids,
-      y: filteredSample.sample_values,
-      mode: "markers",
-      marker: {
-        size: filteredSample.sample_values,
-        color: filteredSample.otu_ids,
-      },
-      text: filteredSample.otu_labels,
-    };
-
-    let layout2 = {
-      title: "Bubble Chart",
-      xaxis: {
-        title: "OTU ID"
-      },
-    };
-    let bubbleData2 = [trace2];
-    Plotly.newPlot("bubble", bubbleData2, layout2);
   });
-}
+
+ function ChangeOption(id) {
+     buildmetadatadropdown(id);
+     buildmetadatadisplay(id);
+    } 
 
 
-// Create the default page
-function init() {
-  let dropdown = d3.select("#selDataset");
+// Build Charts; may want to change chartdata variable name
+function buildBarCharts(samples) {
 
-  d3.json(url).then(function (data) {
-    let ids = data.names;
+    d3.json("samples.json").then((data) => {
+        let chartdata = data.chartdata;
+        let filtermetadata = chartdata.filter(sampleobject => sampleobject.id == samples);
+        var labels= data.samples[0].otu_labels.slice(0,10);
+        var top_otus= (data.samples[0].otu_ids.slice(0,10)).reverse();
+        var OTU_id=top_otus.map(d=>"OTU " + d);
+        var trace = {
+            x:"samples",
+            y:"OTU_id",
+            text:"OTU_labels",
+            marker: {
+            color:'blue'},    
+            type:"bar",
+            oriencation:"h",
+        }
+        var barchartdata=[trace];
+        var chartlayout = {
+            title:"Top Ten OTUs",
+            yaxis:{tickmode:"linear"},
+            margin:{
+                l: 100,
+                r:100,
+                t: 100,
+                b: 100,
+            }
+        };
+// Create a bubble chart that displays each sample.
+// Use otu_ids for the x values.
+// Use sample_values for the y values.
+// Use sample_values for the marker size.
+// Use otu_ids for the marker colors.
+// Use otu_labels for the text values.
+        var trace2= {
+            x: data.samples[0].otu_ids,
+            y:data.samples[0].samplemetadata,
+            mode:"markers",
+            marker: {
+                size:data.samples[0].samplemetadata,
+                color: data.samples[0].otu_ids
+            }
+            text:data.samples[0].otu_labels
 
-    for (id of ids) {
-      dropdown.append("option").text(id).property("value", id);
+
+        }
+        var bubblechartlayout = {
+            xaxis:{title: "OTU IDs"},
+            height: 600,
+            width: 1000
+        };
+        //Plots for bar and bubble
+        Plotly.newPlot("bar", barchartdata, barchartlayout);
+        Plotly.nerPlot("bubble", trace2, bublechartlayout)
+
+        //Data Rendering + Dropdown
+        function init() {
+            let dropdown = d3.select("#selDataset");
+            d3.json("samples.json").then((data)=> {
+            data.names.forEach(function(name){
+                dropdown.append("option").text(name).property("value");
+            });  
+        
+        
+            buildmetadatadropdown(data.names[0]);
+            buildmetadatadisplay(data.names[0]);
+        });
     }
-
-    let firstID = ids[0];
-    optionChanged(firstID);
-  });
-}
-
-// When ID dropdown changes, get the new data and rebuild the plots
-function optionChanged(newID) {
-  createPlots(newID);
-  buildDemoDisplay(newID);
-}
-
-init();
+    init();
